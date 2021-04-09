@@ -7,7 +7,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
-from app import database, schemas
+from app import database, schemas, models
 from app.repositories import user as user_repository
 
 SECRET_KEY = "2f024061e268868b4280367bbe4417e69328f8cb86eb2c46404da28df840cde4"
@@ -28,7 +28,7 @@ def hash_password(password: str):
     return pwd_context.hash(password)
 
 
-def authenticate_user(db: Session, username: str, password: str) -> Union[schemas.User, None]:
+def authenticate_user(db: Session, username: str, password: str) -> Union[models.User, None]:
     user = user_repository.get_user_by_username(db, username)
     if not user:
         return None
