@@ -1,14 +1,19 @@
 from datetime import timedelta
-from typing import Optional
+from typing import List
 
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy.orm import Session
+from starlette.status import HTTP_404_NOT_FOUND
 
-from app import schemas
+from app import schemas, database
+from app.repositories import user as user_repository, item as item_repository
 from app.authentication import (ACCESS_TOKEN_EXPIRE_MINUTES, authenticate_user,
-                                create_access_token, fake_user_db,
+                                create_access_token,
                                 get_current_active_user)
+
+database.Base.metadata.create_all(bind=database.engine)
 
 app = FastAPI()
 app.add_middleware(
@@ -22,13 +27,12 @@ app.add_middleware(
 
 @app.get("/", tags=["Default"])
 def index():
-    return {"message": "Hello fastapi"}
+    return "Hello Fastapi"
 
 
 @app.post("/token", response_model=schemas.Token, tags=["Authentication"])
-async def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = authenticate_user(
-        fake_user_db, form_data.username, form_data.password)
+async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(database.get_db)):
+    user = authenticate_user(db, form_data.username, form_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -43,44 +47,50 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     return {"access_token": access_token, "token_type": "bearer"}
 
 
+# USER
 @app.get("/users/me", response_model=schemas.User, tags=["Users"])
 def get_me(current_user: schemas.User = Depends(get_current_active_user)):
     return current_user
 
 
-@app.get("/users", tags=["Users"])
-def get_users(user_type: schemas.UserType):
-    return {"user_type": user_type}
+@app.post("/users", tags=["Users"], response_model=schemas.User)
+def create_user(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
+    return user_repository.create_user(db, user)
 
 
-@app.get("/users/{user_id}", tags=["Users"])
-def get_user(user_id: int):
-    return {"user": f"User with the id {user_id}"}
+@app.get("/users", tags=["Users"], response_model=List[schemas.User])
+def get_users(skip: int = 0, limit: int = 10, current_user: schemas.User = Depends(get_current_active_user), db: Session = Depends(database.get_db)):
+    users = user_repository.get_users(db, skip, limit)
+    return users
 
 
-@app.post("/items", tags=["Items"])
-def create_item(item: schemas.Item):
-    item_dict = item.dict()
-    if item.tax:
-        item_dict.update({"price_with_tax": item.price + item.tax})
-    return {"item": item_dict}
+@app.get("/users/{user_id}", tags=["Users"], response_model=schemas.User)
+def get_user(user_id: int, current_user: schemas.User = Depends(get_current_active_user), db: Session = Depends(database.get_db)):
+    user = user_repository.get_user(db, user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    return user
+
+# ITEM
+@app.post("/items", tags=["Items"], response_model=schemas.Item)
+def create_item(item: schemas.ItemCreate, current_user: schemas.User = Depends(get_current_active_user), db: Session = Depends(database.get_db)):
+    return item_repository.create_user_item(db, current_user, item)
+
+@app.get("/items", tags=["Items"], response_model=List[schemas.Item])
+def get_items(skip: int = 0, limit: int = 10, current_user: schemas.User = Depends(get_current_active_user), db: Session = Depends(database.get_db)):
+    items = item_repository.get_user_items(db, current_user, skip, limit)
+    return items
 
 
-@app.put("/items/{item_id}", tags=["Items"])
-def update_item(item_id: int, item: schemas.Item):
-    return {"item_id": item_id, **item.dict()}
-
-
-@app.get("/items", tags=["Items"])
-def get_items(limit: int = 10, skip: int = 0, q: Optional[str] = None):
-    return {"limit": limit, "skip": skip, "q": q}
-
-
-@app.get("/users/{user_id}/items", tags=["Items"])
-def get_user_items(user_id: int, item_id: int, skip: int = 0, limit: int = 10, q: Optional[str] = None):
-    return {"user_id": user_id, "q": q, "skip": skip, "limit": limit}
-
-
-@app.get("/users/{user_id}/items/{item_id}", tags=["Items"])
-def get_user_item(user_id: int, item_id: int):
-    return {"user_id": user_id, "item_id": item_id}
+@app.get("/items/{item_id}", tags=["Items"], response_model=schemas.Item)
+def get_item(item_id: int, current_user: schemas.User = Depends(get_current_active_user), db: Session = Depends(database.get_db)):
+    item = item_repository.get_user_item(db, current_user, item_id)
+    if not item:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Item not found"
+        )
+    return item

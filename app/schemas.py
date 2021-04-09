@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel
 from enum import Enum
 
@@ -12,24 +12,35 @@ class TokenData(BaseModel):
     username: Optional[str] = None
 
 
-class UserType(str, Enum):
-    admin = "admin"
-    customer = "customer"
-
-
-class Item(BaseModel):
-    name: str
-    description: Optional[str] = None
-    price: float
-    tax: Optional[float] = None
-
-
-class User(BaseModel):
+class UserBase(BaseModel):
     username: str
-    email: Optional[str] = None
-    full_name: Optional[str] = None
-    disabled: Optional[bool] = None
 
 
-class UserInDB(User):
-    hashed_password: str
+class UserCreate(UserBase):
+    password: str
+
+
+class User(UserBase):
+    id: int
+    is_active: Optional[bool] = None
+
+    class Config:
+        orm_mode = True
+
+
+class ItemBase(BaseModel):
+    title: str
+    description: Optional[str] = None
+
+
+class ItemCreate(ItemBase):
+    pass
+
+
+class Item(ItemBase):
+    id: int
+    owner_id: int
+    owner: User
+
+    class Config:
+        orm_mode = True
