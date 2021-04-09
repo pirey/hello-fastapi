@@ -1,2 +1,4 @@
 fastapi[all]==0.63.0
 python-multipart
+python-jose[cryptography]
+passlib[bcrypt]
