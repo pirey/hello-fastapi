@@ -1,8 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app import database
-from app.routers import items, users, authentication as auth_router
+from app import config, database
+from app.routers import authentication as auth_router
+from app.routers import items, users
 
 # TODO: use alembic for database setup and migration
 database.Base.metadata.create_all(bind=database.engine)
@@ -23,6 +24,13 @@ app.include_router(auth_router.router)
 app.include_router(items.router)
 app.include_router(users.router)
 
+
 @app.get("/version")
 def get_version():
-    return { "title": "Hello Fastapi", "version": "1.0.0" }
+    return {"title": "Hello Fastapi", "version": "1.0.0"}
+
+
+@app.get("/settings")
+def display_settings():
+    settings = config.get_settings()
+    return settings.dict()
