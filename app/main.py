@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app import database
 from app.routers import items, users, authentication as auth_router
 
+# TODO: use alembic for database setup and migration
 database.Base.metadata.create_all(bind=database.engine)
 
 app = FastAPI(
