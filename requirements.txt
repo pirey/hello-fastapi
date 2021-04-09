@@ -1,5 +1,5 @@
 fastapi[all]==0.63.0
-python-multipart
-python-jose[cryptography]
-passlib[bcrypt]
-sqlalchemy
+python-multipart==0.0.5
+python-jose[cryptography]==3.2.0
+passlib[bcrypt]==1.7.4
+SQLAlchemy==1.4.6
