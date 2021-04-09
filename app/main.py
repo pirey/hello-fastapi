@@ -8,7 +8,8 @@ database.Base.metadata.create_all(bind=database.engine)
 
 app = FastAPI(
     title="Hello Fastapi",
-    version="1.0.0"
+    version="1.0.0",
+    docs_url="/"
 )
 app.add_middleware(
     CORSMiddleware,
