@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
 from enum import Enum
 from pydantic import BaseModel
@@ -43,6 +44,13 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost", "http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 
 fake_user_db = {
     "johndoe": {
