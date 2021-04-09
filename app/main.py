@@ -21,3 +21,7 @@ app.add_middleware(
 app.include_router(auth_router.router)
 app.include_router(items.router)
 app.include_router(users.router)
+
+@app.get("/version")
+def get_version():
+    return { "title": "Hello Fastapi", "version": "1.0.0" }
