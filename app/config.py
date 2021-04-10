@@ -7,9 +7,9 @@ from pydantic import BaseSettings
 class Settings(BaseSettings):
     database_url: str
 
+env = os.getenv("ENV") or ""
+env_file = f"{env}.env"
+_settings = Settings(_env_file=env_file)
 
-@lru_cache
 def get_settings():
-    env = os.getenv("ENV") or ""
-    env_file = f"{env}.env"
-    return Settings(_env_file=env_file)
+    return _settings
